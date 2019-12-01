@@ -15,7 +15,7 @@ import java.net.UnknownHostException;
 
 public class Client {
 
-    private static final int PACKETSIZE = 100;
+    private static final int PACKETSIZE = 1000;
     private static final int SOCKETTIMEOUT = 200;
 
     public static File file;
@@ -42,6 +42,7 @@ public class Client {
     public static byte[] checksumme_fkt(byte[] pack) {
         Checksum checksum = new CRC32();
         checksum.update(pack, 0, pack.length);
+        System.out.println("CRC: " + new String(ByteBuffer.allocate(4).putInt((int) checksum.getValue()).array()));
         return ByteBuffer.allocate(4).putInt((int) checksum.getValue()).array();
     }
 
@@ -58,7 +59,7 @@ public class Client {
             System.out.println("Datei zu gross!");
             System.exit(0);
         }
-        return ByteBuffer.allocate(8).putLong(file.length() * 2).array();
+        return ByteBuffer.allocate(8).putLong(file.length()).array();
     }
 
     public static byte[] filename_fkt() {
@@ -100,6 +101,7 @@ public class Client {
         ByteBuffer startpacketMitCRC_bb = ByteBuffer.allocate(startpacketOhneCRC_bb.array().length + 4);
         startpacketMitCRC_bb.put(startpacketOhneCRC_bb.array());
         startpacketMitCRC_bb.put(checksumme_fkt(startpacketOhneCRC_bb.array()));
+        System.out.println(new String(startpacketOhneCRC_bb.array()));
         return startpacketMitCRC_bb;
     }
 
@@ -166,6 +168,8 @@ public class Client {
 
         filesize = filesize_fkt();
 
+        System.out.println("lala: " + ByteBuffer.wrap(filesize).getLong());
+
         filename = filename_fkt();
 
         filenamesize = ByteBuffer.allocate(2).putShort((short) filename.length).array();
@@ -174,30 +178,33 @@ public class Client {
 
         toSend = new ByteBuffer[packetanzahl];
 
-        toSend[0] = ByteBuffer.allocate(sessionnummer.length + 1 + identification.length + filesize.length
-                + filenamesize.length + filename.length);
+        toSend[0] = ByteBuffer.allocate(sessionnummer.length + 1 
+        + identification.length + filesize.length
+                + filenamesize.length + filename.length + 4);
         toSend[0] = startpacket_fkt();
 
         for (int i = 1; i < packetanzahl - 1; i++) {
             toSend[i] = ByteBuffer.allocate(PACKETSIZE + 3);
             System.out.println(i);
             toSend[i].put(sessionnummer);
+            packetnummer ^= 1;
             toSend[i].put(packetnummer);
-            toSend[i].put(Arrays.copyOfRange(filecontent, i * PACKETSIZE, ((i + 1) * PACKETSIZE) - 1));
+            toSend[i].put(Arrays.copyOfRange(filecontent, (i-1) * PACKETSIZE, i * PACKETSIZE));
         }
         System.out.println(packetanzahl-1);
         toSend[packetanzahl - 1] = ByteBuffer.allocate((int) (file.length() % PACKETSIZE) + 7);
         toSend[packetanzahl - 1].put(sessionnummer);
+        packetnummer ^= 1;
         toSend[packetanzahl - 1].put(packetnummer);
         toSend[packetanzahl - 1].put(Arrays.copyOfRange(filecontent, (packetanzahl - 2) * PACKETSIZE, (int) file.length()));
+        toSend[packetanzahl - 1].put(checksumme_fkt(filecontent));
 
         for (int i = 0; i < packetanzahl; i++) {
-            try {
-                System.out.println(new String (toSend[i].array(), "UTF-8"));
-            } catch (UnsupportedEncodingException e){
-                System.out.println("Encodingfehler!");
-            }
+        
+            System.out.print(i + ": ");
+            
             DatagramPacket packet_dp = new DatagramPacket(toSend[i].array(), toSend[i].array().length, IPAddress, Integer.parseInt(args[1]));
+            System.out.println(new String(packet_dp.getData()));
             try {
                 clientSocket.send(packet_dp);
             } catch (IOException e) {
