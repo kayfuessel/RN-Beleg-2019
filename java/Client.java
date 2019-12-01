@@ -15,7 +15,7 @@ import java.net.UnknownHostException;
 
 public class Client {
 
-    private static final int PACKETSIZE = 1000;
+    private static final int PACKETSIZE = 100;
     private static final int SOCKETTIMEOUT = 200;
 
     public static File file;
@@ -201,14 +201,23 @@ public class Client {
 
         for (int i = 0; i < packetanzahl; i++) {
         
-            System.out.print(i + ": ");
+            //System.out.print(i + ": ");
             
             DatagramPacket packet_dp = new DatagramPacket(toSend[i].array(), toSend[i].array().length, IPAddress, Integer.parseInt(args[1]));
-            System.out.println(new String(packet_dp.getData()));
+            //System.out.println(new String(packet_dp.getData()));
+            
             try {
                 clientSocket.send(packet_dp);
             } catch (IOException e) {
-                System.out.println("Fehler beim Senden des Startpacketes!");
+                System.out.println("Fehler beim Senden des Packetes Nr.: " + i + "!");
+                e.printStackTrace();
+            }
+
+            try {
+                clientSocket.receive(packet_dp);
+                System.out.println(new String(packet_dp.getData()));
+            } catch (IOException e) {
+                System.out.println("Fehler beim Empfangen des Bestätigungspacketes Nr.: " + i + "!");
                 e.printStackTrace();
             }
         }

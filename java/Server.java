@@ -131,7 +131,22 @@ class Server {
 
     }
 
+    public static void answer(){
+        System.out.println("hier");
+        byte[] bb = ByteBuffer.allocate(3).put(sessionnummer).put(packetnummer).array();
+        System.out.println(new String(bb));
+        
+        try {
+        server_ds.send(new DatagramPacket(bb, bb.length));
+        } catch (IOException e) {
+            System.out.println("Fehler beim Senden des Antwortpacketes!");
+            e.printStackTrace();
+        }
+        
+    }
+
     public static DatagramSocket server_ds;
+    public static DatagramPacket received_dp;
 
     public static void main(String args[]) {
 
@@ -140,7 +155,7 @@ class Server {
         } catch (SocketException e) {
             System.out.println("Fehler beim Erstellen des Sockets!");
         }
-        DatagramPacket received_dp = new DatagramPacket(received_b, received_b.length);
+        received_dp = new DatagramPacket(received_b, received_b.length);
 
         while (true) {
             try {
@@ -172,6 +187,7 @@ class Server {
                     state = STARTPACKET;
                     break;
                 }
+                answer();
                 packetcounter++;
                 packetnummer ^= 1;
             }
