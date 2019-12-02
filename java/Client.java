@@ -37,6 +37,8 @@ public class Client {
     public static ByteBuffer startpacket;
     public static byte[] receivedBytes;
     public static ByteBuffer[] toSend;
+    public static DatagramPacket packet_dp;
+    public static DatagramPacket received_dp;
 
     // checksumme
     public static byte[] checksumme_fkt(byte[] pack) {
@@ -185,13 +187,11 @@ public class Client {
 
         for (int i = 1; i < packetanzahl - 1; i++) {
             toSend[i] = ByteBuffer.allocate(PACKETSIZE + 3);
-            System.out.println(i);
             toSend[i].put(sessionnummer);
             packetnummer ^= 1;
             toSend[i].put(packetnummer);
             toSend[i].put(Arrays.copyOfRange(filecontent, (i-1) * PACKETSIZE, i * PACKETSIZE));
         }
-        System.out.println(packetanzahl-1);
         toSend[packetanzahl - 1] = ByteBuffer.allocate((int) (file.length() % PACKETSIZE) + 7);
         toSend[packetanzahl - 1].put(sessionnummer);
         packetnummer ^= 1;
@@ -203,7 +203,8 @@ public class Client {
         
             //System.out.print(i + ": ");
             
-            DatagramPacket packet_dp = new DatagramPacket(toSend[i].array(), toSend[i].array().length, IPAddress, Integer.parseInt(args[1]));
+            packet_dp = new DatagramPacket(toSend[i].array(), toSend[i].array().length, IPAddress, Integer.parseInt(args[1]));
+            
             //System.out.println(new String(packet_dp.getData()));
             
             try {
@@ -213,9 +214,11 @@ public class Client {
                 e.printStackTrace();
             }
 
+            byte[] bb = new byte[3];
+            received_dp = new DatagramPacket(bb, bb.length);
+
             try {
-                clientSocket.receive(packet_dp);
-                System.out.println(new String(packet_dp.getData()));
+                clientSocket.receive(received_dp);
             } catch (IOException e) {
                 System.out.println("Fehler beim Empfangen des Bestätigungspacketes Nr.: " + i + "!");
                 e.printStackTrace();

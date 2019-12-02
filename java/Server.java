@@ -2,12 +2,16 @@ import java.io.File;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
+
+import sun.security.x509.IPAddressName;
 
 class Server {
 
@@ -30,6 +34,11 @@ class Server {
     public static long packetanzahl;
     public static int packetcounter = 0;
     public static ByteBuffer filecontent;
+    public static int port_from_client;
+
+    public static InetAddress addr;
+
+    public static int port;
 
     public static boolean startpaket(byte[] paket) {
         if ("START".equals(new String(Arrays.copyOfRange(paket, 3, 8)))) {
@@ -100,6 +109,7 @@ class Server {
             System.out.print(new String(Arrays.copyOfRange(packet, 0, 18 + filenamesize)));
             System.exit(0);
         }
+
     }
 
     public static void firstdatapacket_fkt(byte[] packet) {
@@ -125,6 +135,7 @@ class Server {
         filecontent.put(Arrays.copyOfRange(packet, 3, tmp + 3));
         if (!(crccheck(Arrays.copyOfRange(packet, tmp+3, tmp+7), filecontent.array()))) {
             System.out.println("CRC-Fehler in der Datei!");
+            System.exit(0);
         } else {
             System.out.println("CRC Okay!");
         }
@@ -132,16 +143,14 @@ class Server {
     }
 
     public static void answer(){
-        System.out.println("hier");
         byte[] bb = ByteBuffer.allocate(3).put(sessionnummer).put(packetnummer).array();
-        System.out.println(new String(bb));
-        
         try {
-        server_ds.send(new DatagramPacket(bb, bb.length));
+        server_ds.send(new DatagramPacket(bb, 3, addr, port_from_client));
         } catch (IOException e) {
             System.out.println("Fehler beim Senden des Antwortpacketes!");
             e.printStackTrace();
         }
+        System.out.println((packetcounter+1) + "/" + (packetanzahl+1));
         
     }
 
@@ -150,25 +159,35 @@ class Server {
 
     public static void main(String args[]) {
 
-        try {
-            server_ds = new DatagramSocket(30303);
-        } catch (SocketException e) {
-            System.out.println("Fehler beim Erstellen des Sockets!");
-        }
-        received_dp = new DatagramPacket(received_b, received_b.length);
+        //addr = InetAddress.getByName("localhost");
+        port = Integer.parseInt(args[0]);
 
+        
         while (true) {
             try {
+                server_ds = new DatagramSocket(Integer.parseInt(args[0]));
+            } catch (SocketException e) {
+                System.out.println("Fehler beim Erstellen des Sockets!");
+            }
+            received_dp = new DatagramPacket(received_b, received_b.length);
+    
+
+            try {
                 server_ds.receive(received_dp);
-                System.out.println(packetcounter + ": " + new String(received_dp.getData()));
             } catch (IOException e) {
                 System.out.println("Timeout!");
                 continue;
             }
+            
+            server_ds.disconnect();
+
+
             if (received_dp.getData()[2] == packetnummer && sessionnummercheck(received_dp.getData())) {
                 switch (state) {
                 case STARTPACKET:
                     startpacket_fkt(received_dp.getData());
+                    addr = received_dp.getAddress();
+                    port_from_client = received_dp.getPort();
                     state = FIRSTDATAPACKET;
                     break;
                 case FIRSTDATAPACKET:
@@ -184,6 +203,7 @@ class Server {
                 case LASTDATAPACKET:
                     lastdatapacket_fkt(received_dp.getData());
                     System.out.print(new String(filecontent.array()));
+                    System.out.println("finished");
                     state = STARTPACKET;
                     break;
                 }
