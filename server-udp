@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cd ./bin/
+java Server $1 $2 $3
