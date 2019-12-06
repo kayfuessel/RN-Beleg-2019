@@ -35,7 +35,7 @@ public class Client {
     public static int packetanzahl;
     public static byte[] sessionnummer;
     public static byte packetnummer = 0;
-    public static byte[] identification = { 83, 84, 65, 82, 84 }; // identification says "START"
+    public static byte[] identification = { 83, 116, 97, 114, 116 }; // identification says "START"
     public static byte[] filesize;
     public static byte[] filename;
     public static byte[] filenamesize;
@@ -183,12 +183,10 @@ public class Client {
         }
 
         try {
-            IPAddress = InetAddress.getByName(new URL(args[0]).getHost());
+            IPAddress = InetAddress.getByName(args[0]);
+            System.out.println(IPAddress.getHostAddress());
         } catch (UnknownHostException e) {
             System.out.println("Fehler beim Lesen der Internetadresse!");
-            e.printStackTrace();
-        } catch (MalformedURLException e) {
-            System.out.println("Fehlerhafte Addresse!");
             System.exit(-1);
         }
 

@@ -16,8 +16,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
-import sun.security.x509.IPAddressName;
-
 class Server {
 
     public static int state = 0;
