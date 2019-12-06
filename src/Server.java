@@ -198,9 +198,9 @@ class Server {
     }
 
     public static void reset() {
-        state = 0;
+        state = STARTPACKET;
         sessionnummer = null;
-        packetnummer = 0;
+        packetnummer = (byte)1;
         kennung_received = null;
         filesize = 0;
         filenamesize = 0;
@@ -209,7 +209,7 @@ class Server {
         packetsize = 0;
         received_b = new byte[1500];
         packetanzahl = 0;
-        packetcounter = 0;
+        packetcounter = -1;
         filecontent =  ByteBuffer.allocate(0);
         port_from_client = 0;
         losscounter = 0;
@@ -241,7 +241,6 @@ class Server {
         }
 
         while (true) {
-
             received_dp = new DatagramPacket(received_b, received_b.length);
             try {
                 server_ds.receive(received_dp);
@@ -252,7 +251,6 @@ class Server {
                 }
                 continue;
             }
-
             if (received_dp.getData()[2] == packetnummer && sessionnummercheck(received_dp.getData()) && losscheck()) {
                 losscounter = 0;
                 switch (state) {

@@ -1,5 +1,6 @@
 import java.io.File;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -15,10 +16,11 @@ import java.time.ZoneId;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.UnknownHostException;
+import java.net.URL;
 
 public class Client {
 
-    private static final int PACKETSIZE = 1000;
+    private static final int PACKETSIZE = 1250;
     private static final int SOCKETTIMEOUT = 1000;
 
     public static File file;
@@ -43,8 +45,9 @@ public class Client {
     public static DatagramPacket packet_dp;
     public static DatagramPacket received_dp;
     public static int losscount = 0;
-    public static long time1;
-    public static long time2;
+    public static long timeonepacket1;
+    public static long timeonepacket2;
+    public static long timefromstart;
 
     // checksumme
     public static byte[] checksumme_fkt(byte[] pack) {
@@ -126,9 +129,9 @@ public class Client {
         int percentage = (int) Math.ceil(((float)  val / (float) packetanzahl) * 100);
         String tmps;
         if(percentage < 10){
-            tmps = new String("00" + percentage + "% [");
+            tmps = new String("  " + percentage + "% [");
         } else if (percentage < 100){
-            tmps = new String("0" + percentage + "% [");
+            tmps = new String(" " + percentage + "% [");
         } else {
             tmps = new String(percentage + "% [");
         }
@@ -139,14 +142,15 @@ public class Client {
             tmps = new String(tmps + "-");
         }
         tmps = new String(tmps + "] ");
-        float tmpf = PACKETSIZE/(System.currentTimeMillis() - time1 +1);
+        float tmpf = (float)PACKETSIZE/(float)(timeonepacket2 - timeonepacket1 +1);
         tmps = new String(tmps + (int) Math.ceil(tmpf) + "kb/s");
 
         if (val != (packetanzahl-1)){
             tmps = new String(tmps + "\r");
         }
         else {
-            tmps = new String(tmps + "\n");
+            tmps = new String(tmps + "\n" + "Es wurden " + packetanzahl + " Packete mit einer Durchschnittsgeschwindigkeit von " 
+            + (int)(file.length() / (timeonepacket2-timefromstart)) + "kb/s in " + ((timeonepacket2 - timefromstart)/1000) + "s übertragen!\n");
         }
         System.out.print("\033[2K");
         return tmps.getBytes();
@@ -159,7 +163,7 @@ public class Client {
         }
 
         try {
-            file = new File("./" + args[2].split("/")[args[2].split("/").length-1]);
+            file = new File(args[2]);
         } catch (NullPointerException e) {
             System.out.println("Fehler beim Öffnen der Datei!");
             e.printStackTrace();
@@ -179,10 +183,13 @@ public class Client {
         }
 
         try {
-            IPAddress = InetAddress.getByName(args[0]);
+            IPAddress = InetAddress.getByName(new URL(args[0]).getHost());
         } catch (UnknownHostException e) {
             System.out.println("Fehler beim Lesen der Internetadresse!");
             e.printStackTrace();
+        } catch (MalformedURLException e) {
+            System.out.println("Fehlerhafte Addresse!");
+            System.exit(-1);
         }
 
         packet = new byte[PACKETSIZE];
@@ -235,9 +242,8 @@ public class Client {
         System.out.println("Anzahl zu sendende Packete: " + packetanzahl);
 
         for (int i = 0; i < packetanzahl; i++) {
-            time1 = System.currentTimeMillis();
             packet_dp = new DatagramPacket(toSend[i].array(), toSend[i].array().length, IPAddress, Integer.parseInt(args[1]));
-            
+            timeonepacket1 = System.currentTimeMillis();
             try {
                 clientSocket.send(packet_dp);
             } catch (IOException e) {
@@ -253,13 +259,18 @@ public class Client {
             } catch (IOException e) {
                 i--;
                 if (++losscount == 10){
-                    System.out.println("\n10 fehlerhafte Packete hintereinander!\n");
+                    System.out.println("\n10 fehlerhafte Packete hintereinander!");
                     System.exit(-1);
                 }
                 continue;
             }
+            timeonepacket2 = System.currentTimeMillis();
+            if(i==0){
+                timefromstart = timeonepacket1;
+            }
+
             losscount = 0;
-            ByteBuffer bbb = ByteBuffer.allocate(80).put(ladebalken(i));
+            ByteBuffer bbb = ByteBuffer.allocate(200).put(ladebalken(i));
             System.out.print(new String(bbb.array()));
         }
     }
