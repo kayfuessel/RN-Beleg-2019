@@ -1,0 +1,172 @@
+\documentclass[12pt]{article}
+
+\usepackage[english,ngerman]{babel}
+\usepackage[a4paper, total={6.5in, 10in}]{geometry}
+\usepackage{amsmath}
+\usepackage{upquote}
+\usepackage{listing}
+
+\usepackage[utf8]{inputenc}
+\begin{document}
+
+\section{Aufgabenstellung}
+
+Erstellen Sie ein Programm (client + server) zur Übertragung beliebiger Dateien zwischen zwei Rechnern, basierend auf dem UDP-Protokoll. 
+Das Programm soll mit der Sprache JAVA erstellt werden und im Labor S311 unter Linux lauffähig sein und dort vorgeführt werden. 
+Folgende Punkte sind umzusetzen:
+\begin{enumerate}
+    \item Aufruf des Clients (Quelle) auf der Konsole mit den Parametern: Zieladresse (IP oder Hostname) + Portnummer (Bsp.: client-udp is311p1 3333 test.gif)
+    
+    \item Aufruf des Servers (Ziel) mit den Parametern: Portnummer (Bsp.: server-udp 3333). 
+    Um die Aufrufe für Client und Server so zu realisieren ist ein kleines Bash-script notwendig (z.B.: java Clientklasse \$1 \$2 \$3)
+    
+    \item Auf dem Zielrechner (Server) ist die Datei unter Verwendung des korrekten Dateinamens im Pfad des Servers abzuspeichern. 
+    Ist die Datei bereits vorhanden, soll an den Basisnamen der neuen Datei das Zeichen „1“ angehängt werden. 
+    Client und Server sollten auch auf dem selben Rechner im selben Pfad funktionieren.
+
+    \item Messen Sie bei der Übertragung die Datenrate und zeigen Sie am Client periodisch (z.B. jede Sekunde) den aktuellen Wert und am Ende den Gesamtwert an. 
+    Orientieren Sie sich hierzu an wget.
+
+    \item Implementieren Sie exakt das im Dokument Beleg-Protokoll vorgegebene Übertra-gungsprotokoll. 
+    Damit soll gewährleistet werden, dass Ihr Programm auch mit einem beliebigen anderen Programm funktioniert, welches dieses Protokoll implementiert.
+    Gehen Sie davon aus, dass im Labor Pakete fehlerhaft übertragen werden können, verloren gehen können oder in ihrer Reihenfolge vertauscht werden können (beide Richtungen!). Implementieren Sie eine entsprechende Fehlerkorrektur.
+
+    \item Testen Sie Ihr Programm ausgiebig, hierzu sind Debug-Ausgaben sinnvoll. Entwerfen Sie eine Testumgebung als Bestandteil des Servers, mittels derer Sie eine bestimmte Paketverlustwahrscheinlichkeit und Paketverzögerung für beide Übertragungsrichtungen simulieren können. Sinnvollerweise sollten diese Parameter über die Konsole konfigurierbar sein, z.B: server-udp 3333 0.1 150 für 10\% Paketverluste und 150 ms mittlere Verzögerung für beide Richtungen. Bei der Vorführung im Labor werden wir einen Netzsimulator nutzen, welcher eine entsprechende Netzqualität simuliert.
+    Bestimmen Sie den theoretisch max. erzielbaren Durchsatz bei 10\% Paketverlust und 10 ms Verzögerung mit dem SW-Protokoll und vergleichen diesen mit Ihrem Programm. Begründen Sie die Unterschiede.
+
+    \item Dokumentieren Sie die Funktion Ihres Programms unter Nutzung von Latex. Notwendig ist mindestens ein Zustandsdiagramm für Client und Server. Geben Sie Probleme/Limitierungen/Verbesserungsvorschläge für das verwendete Protokoll an.
+    
+    \item Der Abgabetermin ist auf der Website des Fachs zu finden, die Vorführung der Aufgabe findet dann zu den angekündigten Praktikumszeiten statt. Die Abgabe des Belegs erfolgt als tar-Archiv mit einem vorgegebenen Aufbau, Informationen hierzu werden im Dokument Beleg-Abgabeformat bereitgestellt. Plagiate werden mit Note 5 bewertet!
+\end{enumerate}
+
+\section{Durchsatzberechnung}
+
+\subsection{Serverausgabe}
+    {\bf idefix Port 3333 (0.1 Paketverlust und 10ms Verzögerung):\vspace{2mm}}
+    \\
+    {\tt Server: Start packet received\\
+    IP / Port: /141.56.60.40 58973\\
+    Start ID:29183, Length: 2232666 Bytes, Filename: praktikumsvertrag.pdf\\
+    CRC Data StartPacket:89c14a18 CRC field:89c14a18\\
+    Tue Dec 10 14:41:57 CET 2019\\
+    Server: All data received\\
+    Server: CRC (received data): 9b375d30\\
+    Server: CRC (source data)  : 9b375d30\\
+    CRC OK\\
+    Server: Transmission time: 403.0s, data rate: 44.32091315136476 kbit/s\\}
+    \\
+    {\bf idefix Port 3330 (0 Paketverlust und 0ms Verzögerung):\vspace{2mm}}
+    \\
+    {\tt Server: Start packet received\\
+    IP / Port: /141.56.60.40 57497\\
+    Start ID:-9943, Length: 2232666 Bytes, Filename: praktikumsvertrag.pdf\\
+    CRC Data StartPacket:89498135 CRC field:89498135\\
+    Tue Dec 10 14:39:11 CET 2019\\
+    Server: All data received\\
+    Server: CRC (received data): 9b375d30\\
+    Server: CRC (source data)  : 9b375d30\\
+    CRC OK\\
+    Server: Transmission time: 151.0s, data rate: 118.28694039735099 kbit/s\\}
+    \\
+\pagebreak
+\subsection{Berechnung}
+    \begin{itemize}
+        \item[] \(P_{C\rightarrow S} = P_{S\rightarrow C} = 0,1\)
+        \item[] \(R = \frac{1250Byte}{1253Byte} = 0,9976\) 
+        \item[] \(T_a = 10ms = 10000\mu s\)
+        \item[] \(r_b = 2,47MBit/s = 2470000Bits/s\)
+        \item[] \(L_p = 1253Bit = 10024Bit\)
+        \item[] \(L_{ACK} = 3Byte = 24Bit\)
+        \item[] \(T_p = \frac{L_p}{r_b} = \frac{10000Bit}{2470000Bit/s} = 4048,583\mu s\)
+        \item[] \(T_{ACK} = \frac{L_{ACK}}{r_b} = \frac{24Bit}{247000000/Bit/s} = 9,7166\mu s\)
+        \item[] \(T_w \approx 2T_a + T_{ACK} = 20000\mu s + 9,7166\mu s = 20009,7166\mu s\) 
+        \item[] \(\eta_{SW} = \frac{T_p}{T_p + T_w}*(1-P_{C\rightarrow S})*(1-P_{S\rightarrow C})*0,9976\) 
+        \item[] \(\eta_{SW} = \frac{4048,583\mu s}{4048,583\mu s + 20009,7166\mu s}*0,9^2*0,9976\) 
+        \item[] \(\eta_{SW} = 0,136 \)
+        \item[]  Datenrate: \(\eta_{SW} * r_b = 0,136 * 2470000Bits/s = 335920Bits/s = 335,92kBits/s\)
+    \end{itemize}
+\begin{description}
+\item[Das erreichte Ergebnis liegt deutlich darunter. Gründe dafür könnten sein:]~\par
+\begin{enumerate}
+    \item[$\bullet$] Fehlende Optimierung des Quellcodes
+    \item[$\bullet$] Eine in der Praxis stark schwankende Leitung
+    \item[$\bullet$] Der Übertragungsweg (Laptop zu Android(Wifi-Theter-Funktion) + VPN)\\
+    ist instabil und fehleranfällig
+\end{enumerate}
+
+\end{description}
+\section{Zustandsdiagramme}
+\subsection{Server}
+\subsection{Client}
+
+\section{Quellcodedokumentation}
+\subsection{Server.java}
+public static boolean sessionnummercheck(byte[] packet)\\
+Kontrolliert die ersten 2 Bytes aus dem Empfangenen Paket auf Gleichheit.\\
+
+public static long packetanzahl\_fkt(int packetsize, long filesize)\\
+Ermittelt aus den gegebenen Parametern packetsize und filesize die Anzahl der zu erwartenden Packete und gibt diese zurück.\\
+
+public static boolean crccheck(byte[] crc, byte[] field)\\
+Prüft die im Startpaket empfangene CRC32-Checksumme auf Gleichheit mit der CRC32-Checksumme über den gesamten Dateiinhalt.\\
+
+public static void startpacket\_fkt(byte[] packet)\\
+Zerlegt das empfangene Paket in die einzelnen Bestandteile und übergibt diese den passenden Variablen.\\
+
+public static void firstdatapacket\_fkt(byte[] packet)\\
+Ermittelt die Paketgröße und übergibt den Wert der passenden Variable.\\
+
+public static String test\_filename\_fkt()\\
+Testet, ob die Datei bereits vorhanden ist. Ist sie das, so wird laut Protokoll an den Dateinamen eine 1 konkatiniert. So lange, bis sie nicht existiert. Der darauß entstandene String wird zurückgegeben.\\
+
+public static void lastdatapacket\_fkt(byte[] packet)kennung\_received.\\
+Erstellt aus den empfangenen Daten die finale Datei.\\
+
+public static void answer()\\
+Sendet an den Server das Bestätigungspaket.\\
+
+public static boolean losscheck()\\
+Falls Fehlerparameter angegeben wurden, so gibt diese Funktion im gegebenen Verhätniss true oder false zurück.\\
+
+public static void reset()\\
+Setzt die Werte auf den Startzustand zurück, um eine weitere Datei zu empfangen.\\
+
+\subsection{Client.java}
+
+public static byte[] checksumme\_fkt(byte[] pack)\\
+Erstellt die CRC32-Checksumme des Bytearrays pack und gibt dieses zurück.\\
+
+public static byte[] sessionnummer\_fkt()\\
+Erstellt ein zufälliges 2 Byte großes Bytearray und gibt dieses zurück.\\
+
+public static byte[] filesize\_fkt()\\
+Ermittelt die Größe der zu sendenden Datei und wandelt sie in ein 8 Byte großes Array um, welches zurückgegeben wird.\\
+
+public static byte[] filename\_fkt()\\
+Liest den Dateinamen der Datei und wandelt diesen in ein Bytearray um, welches zurückgegeben wird.\\
+
+public static int packetanzahl\_fkt()\\
+Ermittelt die Paketanzahl nach folgender Rechnung:\\
+\begin{verbatim}
+    int anzahl = dateigröße / packetgröße;
+    anzahl++;
+    if ((dateigröße % packetgröße) > 0) {
+        anzahl++;
+    }
+    if ((paketgröße - (dateigröße % paketgröße)) < 7) {
+        anzahl++;
+    }
+\end{verbatim}
+public static ByteBuffer startpacket\_fkt()\\
+Packt das Startpaket nach Vorgabe und gibt es als ByteBufferobjekt zurück.  \\
+
+public static boolean sessionnummercheck()\\
+Kontrolliert die ersten 2 Bytes aus dem Empfangenen Paket auf Gleichheit.\\
+
+public static boolean packetnumbercheck()\\
+Kontrolliert das dritte Byte im empfangenen auf gleichheit mit der anzunehmenden Paketnummer.\\
+
+public static void ladebalken(int val)\\
+Erstellt einen String anhand des derzeitigen Paketes (val) und gibt diesen sekündlich auf der Konsole aus.\\
+
+\end{document}
