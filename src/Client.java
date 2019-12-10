@@ -48,6 +48,8 @@ public class Client {
     public static long timeonepacket1;
     public static long timeonepacket2;
     public static long timefromstart;
+    public static int seconds = -1;
+    public static int timercounter = 0;
 
     // checksumme
     public static byte[] checksumme_fkt(byte[] pack) {
@@ -124,36 +126,42 @@ public class Client {
         return packetnummer == receivedBytes[2];
     }
 
-    public static byte[] ladebalken(int val){
+    public static void ladebalken(int val){
         int tmpi = (int) Math.ceil(((float)  val / (float) packetanzahl) * 50);
         int percentage = (int) Math.ceil(((float)  val / (float) packetanzahl) * 100);
         String tmps;
-        if(percentage < 10){
-            tmps = new String("  " + percentage + "% [");
-        } else if (percentage < 100){
-            tmps = new String(" " + percentage + "% [");
-        } else {
-            tmps = new String(percentage + "% [");
-        }
-        for (int i = 0; i < tmpi; i++){
-            tmps = new String(tmps + "#");
-        }
-        for (int i = 0; i< (50-tmpi);i++){
-            tmps = new String(tmps + "-");
-        }
-        tmps = new String(tmps + "] ");
-        float tmpf = (float)PACKETSIZE/(float)(timeonepacket2 - timeonepacket1 +1);
-        tmps = new String(tmps + (int) Math.ceil(tmpf) + "kb/s");
 
-        if (val != (packetanzahl-1)){
-            tmps = new String(tmps + "\r");
+        if(seconds != (int) ((System.currentTimeMillis() - timefromstart)/1000) || val == (packetanzahl-1)){
+            seconds = (int) ((System.currentTimeMillis() - timefromstart)/1000);
+            if(percentage < 10){
+                tmps = new String("  " + percentage + "% [");
+            } else if (percentage < 100){
+                tmps = new String(" " + percentage + "% [");
+            } else {
+                tmps = new String(percentage + "% [");
+            }
+            for (int i = 0; i < tmpi; i++){
+                tmps = new String(tmps + "#");
+            }
+            for (int i = 0; i< (50-tmpi);i++){
+                tmps = new String(tmps + "-");
+            }
+            tmps = new String(tmps + "] ");
+            float tmpf = (float)PACKETSIZE*(float)(val)/(float)(System.currentTimeMillis() - timefromstart +1);
+            tmps = new String(tmps + (int) Math.ceil(tmpf) + "kb/s");
+    
+            if (val != (packetanzahl-1)){
+                tmps = new String(tmps + "\r");
+            }
+            else {
+                tmps = new String(tmps + "\n" + "Es wurden " + packetanzahl + " Packete mit einer Durchschnittsgeschwindigkeit von " 
+                + (int)(file.length() / (System.currentTimeMillis() - timefromstart +1)) + "kb/s in " + ((System.currentTimeMillis() - timefromstart)/1000) + "s übertragen!\n");
+            }
+            System.out.print("\033[2K");
+            ByteBuffer bbb = ByteBuffer.allocate(200).put(tmps.getBytes());
+            System.out.print(new String(bbb.array()));
+            timercounter = packetcounter;
         }
-        else {
-            tmps = new String(tmps + "\n" + "Es wurden " + packetanzahl + " Packete mit einer Durchschnittsgeschwindigkeit von " 
-            + (int)(file.length() / (timeonepacket2-timefromstart)) + "kb/s in " + ((timeonepacket2 - timefromstart)/1000) + "s übertragen!\n");
-        }
-        System.out.print("\033[2K");
-        return tmps.getBytes();
     }
 
     public static void main(String[] args) {
@@ -268,8 +276,7 @@ public class Client {
             }
 
             losscount = 0;
-            ByteBuffer bbb = ByteBuffer.allocate(200).put(ladebalken(i));
-            System.out.print(new String(bbb.array()));
+            ladebalken(i);
         }
     }
 }

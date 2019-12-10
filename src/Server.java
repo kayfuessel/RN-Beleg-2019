@@ -26,7 +26,7 @@ class Server {
 
     public static byte[] sessionnummer;
     public static byte packetnummer;
-    public static byte[] kennung = { 83, 84, 65, 82, 84 };
+    public static byte[] kennung = { 83, 116, 97, 114, 116 };
     public static byte[] kennung_received;
     public static long filesize;
     public static short filenamesize;
@@ -48,23 +48,6 @@ class Server {
     public static DatagramSocket server_ds;
     public static DatagramPacket received_dp;
     public static int losscounter = 0;
-
-    public static boolean startpaket(byte[] paket) {
-        if ("START".equals(new String(Arrays.copyOfRange(paket, 3, 8)))) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public static String filename_fkt(String filename) {
-        File tmp = new File(filename);
-        while (tmp.exists() && tmp.length() != 0) {
-            String[] stringtmp = tmp.toString().split("\\.");
-            tmp = new File(stringtmp[0] + "1." + stringtmp[1]);
-        }
-        return tmp.toString();
-    }
 
     public static boolean sessionnummercheck(byte[] packet) {
         if (state == STARTPACKET) {
@@ -101,6 +84,11 @@ class Server {
             System.out.println("Packetnummer: " + packetnummer);
             kennung_received = new byte[5];
             kennung_received = Arrays.copyOfRange(packet, 3, 8);
+            if (!Arrays.equals(kennung_received, kennung)) {
+                System.out.println(new String(kennung_received));
+                System.out.println("Falsche Kennung");
+                System.exit(-1);
+            }
             System.out.println("Kennung: " + new String(kennung_received));
             filesize = ByteBuffer.wrap(Arrays.copyOfRange(packet, 8, 16)).getLong();
             System.out.println("Dateigröße: " + filesize);
@@ -137,14 +125,20 @@ class Server {
     }
 
     public static String test_filename_fkt() {
-        testfile = new File("./" + new String(filename));
+        testfile = new File( System.getProperty("user.dir") + "/" + new String(filename));
+        String str = new String("/");
+        for (int i = 1; i < testfile.getAbsolutePath().split("/").length-2; i++){
+            str = new String (str + "/" + testfile.getAbsolutePath().split("/")[i]);
+        }
+        
+        testfile = new File(str + "/" + new String(filename));
+
         finalname = new String(filename);
         while (testfile.exists()) {
-            String[] tmp = finalname.split("\\.");
-            finalname = new String(tmp[0] + "1." + tmp[1]);
-            testfile = new File("./" + new String(finalname));
+            String[] tmp = testfile.getAbsolutePath().split("\\.");
+            testfile = new File(tmp[0] + "1." + tmp[1]);
         }
-        return testfile.getName();
+        return testfile.getAbsolutePath();
     }
 
     public static void lastdatapacket_fkt(byte[] packet) {
